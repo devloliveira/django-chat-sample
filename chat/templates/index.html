@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table>
+    <tr>
+        <th>Contact</th>
+        <th>Action</th>
+    </tr>
+
+    {% for data in contacts_data %}
+        <tr>
+            <td>{{ data.contact.username }} ({{ data.contact.id }})</td>
+            <td>
+                {% if data.connection and data.connection.status == 'a' %}
+                    <input name="btn-action" type="button" user_id="{{ data.contact.id }}" action="enter-room" value="Send message">
+                {% elif not data.connection  %}
+                    <input name="btn-action" type="button" user_id="{{ data.contact.id }}" action="request-connection" value="Request connection">
+                {% elif data.connection.status == 'p' and data.connection.author == current_user %}
+                    Awaiting to be approved.
+                {% elif data.connection.status == 'p' and data.connection.target_user == current_user %}
+                    <input name="btn-action" type="button" user_id="{{ data.contact.id }}" action="approve-connection" value="Approve connection">
+                    <input name="btn-action" type="button" user_id="{{ data.contact.id }}" action="reject-connection" value="Reject connection">
+                {% elif data.connection.status == 'r' and data.connection.target_user == current_user %}
+                    You refused the connection.
+                {% elif data.connection.status == 'r' and data.connection.author == current_user %}
+                    Request has been rejected.
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+
+        const logged_user_id = {{ current_user.id }};
+
+        async function requestConnection(user_id) {
+
+            let request_connection_url = "/chat/connection/request/" + user_id;
+            fetch(request_connection_url, {
+                method: "POST"
+            }).then(function(response) {
+                if(response.status === 200) {
+                    location.reload();
+                }
+            });
+
+        }
+
+        async function approveConnection(user_id) {
+
+            let approve_connection_url = "/chat/connection/accept/" + user_id;
+            fetch(approve_connection_url, {
+                method: "POST"
+            }).then(function(response) {
+                if(response.status === 200) {
+                    location.reload();
+                }
+            });
+
+        }
+
+        async function rejectConnection(user_id) {
+
+            let reject_connection_url = "/chat/connection/reject/" + user_id;
+            fetch(reject_connection_url, {
+                method: "POST"
+            }).then(function(response) {
+                if(response.status === 200) {
+                    location.reload();
+                }
+            });
+
+        }
+
+        async function enterRoom(user_id) {
+            let room_id = logged_user_id + parseInt(user_id);
+            let room_url = "/chat/room/" + room_id;
+            window.location = room_url;
+        };
+
+        const action_btns = document.getElementsByName("btn-action");
+
+        run_action = function(event) {
+            let user_id = event.target.getAttribute("user_id");
+            let action = event.target.getAttribute("action");
+
+            if(action === "enter-room") {
+                enterRoom(user_id);
+            } else if(action === "request-connection") {
+                requestConnection(user_id);
+            } else if(action === "approve-connection") {
+                approveConnection(user_id);
+            } else if(action === "reject-connection") {
+                rejectConnection(user_id);
+            }
+        };
+
+        for(action_btn of action_btns) {
+            action_btn.onclick = run_action;
+        }
+        console.log(action_btns)
+
+    </script>
+{% endblock %}

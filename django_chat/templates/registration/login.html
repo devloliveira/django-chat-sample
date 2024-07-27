@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+{% for message in messages %}
+  {% if 'success' in message.tags %}
+  <p class="alert alert-success" role="alert"><span style="font-weight:bold">{{ message }}</span></p>
+  {% else %}
+  <p class="alert alert-warning" role="alert"><span style="font-weight:bold">{{ message }}</span></p>
+  {% endif %}
+{% endfor %}
+
+
+{% if next %}
+    {% if user.is_authenticated %}
+    <p>Your account doesn't have access to this page. To proceed,
+    please login with an account that has access.</p>
+    {% else %}
+    <p>Please login to see this page.</p>
+    {% endif %}
+{% endif %}
+
+<span id="error"></span>
+
+<form id="login-form" method="post" action="/login/">
+{% csrf_token %}
+<table>
+<tr>
+    <td>{{ form.username.label_tag }}</td>
+    <td>{{ form.username }}</td>
+</tr>
+<tr>
+    <td>{{ form.password.label_tag }}</td>
+    <td>{{ form.password }}</td>
+</tr>
+</table>
+
+<input id='login-button' type="submit" value="login">
+<input type="hidden" name="next" value="{{ next }}">
+</form>
+
+
+<script>
+
+    function errorMessage(message) {
+        var error = document.getElementById("error");
+        error.textContent = message;
+        error.style.color = "red";
+    }
+
+    function processLogin(event) {
+        if(event.preventDefault) {
+            event.preventDefault();
+        }
+
+        let form = event.srcElement;
+        const data = new URLSearchParams();
+        var payload = {};
+        for (const pair of new FormData(form)) {
+            payload[pair[0]] = pair[1];
+        }
+
+        fetch("/login/", {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+        })
+        .then(function (response){
+            if(response.status != 200) {
+                errorMessage(response.statusText);
+            } else {
+                window.location = "/chat/";
+            }
+            console.log(response);
+        });
+
+        return false;
+    }
+    const form = document.getElementById("login-form");
+
+    if(form.attachEvent) {
+        form.attachEvent("submit", processLogin);
+    } else {
+        form.addEventListener("submit", processLogin);
+    }
+
+</script>
+
+{% endblock %}

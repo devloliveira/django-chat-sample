@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p>Logged as <b>{{ request.user.username }}</b></p>
+
+
+<p>All available users</p>
+{% for user in all_users %}
+
+    <p>{{ user.username }}</p>
+
+{% endfor %}
+
+{% endblock %}

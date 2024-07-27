@@ -1,0 +1,71 @@
+x-djangochat: &djangochat
+
+volumes:
+  backend-db:
+
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        install_dev: 1
+    image: ${DOCKER_IMAGE:-local/djangochat}:${DOCKER_TAG:-latest}
+    volumes:
+      - ./:/app:rw
+    # network_mode: "host"
+    stdin_open: true
+    tty: true
+    environment:
+      PYTHONPATH: '/app'
+      ENVIRONMENT: local
+      PGUSER: postgres
+      DATABASE_HOST: backend-db
+      DATABASE_NAME: postgres
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: ""
+      DATABASE_PORT: 5432
+    depends_on:
+      backend-db: {condition: service_healthy}
+    ports:
+      - 5000:5000
+    command: ./django_chat/manage.py runserver 0.0.0.0:5000
+
+  backend-db:
+    image: postgres:12-alpine
+    volumes:
+      - ./database:/var/lib/postgresql/data:rw
+    ports:
+      - 5400:5432
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ""
+      POSTGRES_DB: django_chat
+    healthcheck:
+      test: pg_isready -Upostgres
+      interval: 3s
+      timeout: 30s
+      start_period: 80s
+
+  redis:
+    image: redis:6-alpine
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "6379:6379"
+    command: redis-server
+    volumes:
+      - ./_local/redis:/data:rw
+    # network_mode: "host"
+
+  fake-s3:
+    image: minio/minio
+    volumes:
+      - ./_local/s3:/data
+    ports:
+      - 9000:9000
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data

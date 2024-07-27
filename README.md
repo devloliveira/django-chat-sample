@@ -13,6 +13,6 @@ Sample app that uses django channels and redis to allow real time communication 
 
 
 ### Running the project
-> docker-compose up
+> sudo docker-compose up
 
 The app will run on localhost:5000
